@@ -1,0 +1,21 @@
+{
+  "method": "approval rate relative to the highest-approval group",
+  "screening_threshold": 0.8,
+  "proxies": {
+    "addr_state": {
+      "groups_analyzed": 43,
+      "minimum_adverse_impact_ratio": 0.9609785345964744,
+      "groups_below_four_fifths": []
+    },
+    "zip_code": {
+      "groups_analyzed": 110,
+      "minimum_adverse_impact_ratio": 0.9564876296161543,
+      "groups_below_four_fifths": []
+    }
+  },
+  "caveat": "State and masked ZIP are geographic proxies, not protected-class labels. This screen can reveal geographic disparities but cannot establish demographic parity or regulatory compliance.",
+  "n_test": 201803,
+  "overall_approval_rate": 0.963935124849482,
+  "threshold": 0.51,
+  "feature_exclusion_verified": true
+}

@@ -1,2 +1,2 @@
-"""LoanGuard: credit default risk modelling on the LendingClub 2007-2018 extract."""
-__all__ = ["config", "data", "features", "evaluate"]
+"""LoanGuard: an audit-first credit-risk modelling case study."""
+__all__ = ["config", "data", "evaluate", "fairness", "features"]

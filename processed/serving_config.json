@@ -1,4 +1,8 @@
 {
   "threshold": 0.51,
-  "trained_on": "random split, all years"
+  "trained_on": "random split, all years",
+  "artifact_versions": {
+    "lightgbm": "4.7.0",
+    "scikit_learn": "1.9.1"
+  }
 }

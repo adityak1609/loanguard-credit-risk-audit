@@ -78,6 +78,12 @@ APPLICANT_NUMERIC = [
 ]
 APPLICANT_CATEGORICAL = ["home_ownership", "purpose", "verification_status"]
 
+# Geographic fields are retained only for post-model fairness monitoring. They
+# are deliberately excluded from every deployable feature set: both can act as
+# proxies for protected characteristics and neither is needed to reproduce the
+# reported model performance.
+FAIRNESS_PROXIES = ["addr_state", "zip_code"]
+
 # Derived in features.py
 ENGINEERED = [
     "loan_to_income",
@@ -100,7 +106,14 @@ META = [
 ]
 
 USECOLS = sorted(
-    set(INCUMBENT + APPLICANT_NUMERIC + APPLICANT_CATEGORICAL + META + LEAKY)
+    set(
+        INCUMBENT
+        + APPLICANT_NUMERIC
+        + APPLICANT_CATEGORICAL
+        + FAIRNESS_PROXIES
+        + META
+        + LEAKY
+    )
 )
 
 # ── Economics ────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ Internal deep-dive. The `README.md` states *what was found*; this document expla
 the remaining soft spots are.
 
 Read order if you're new: §1 (mental model) → §3 (targets) → §7 (cost model) → §8
-(the five experiments) → §10 (known soft spots).
+(the six experiments) → §10 (known soft spots).
 
 ---
 
@@ -16,7 +16,7 @@ structured as **a chain of questions about whether a reported number means anyth
 The model itself is deliberately unremarkable — a stock LightGBM with hand-set
 hyperparameters, never tuned. Everything interesting lives in the evaluation layer.
 
-The four questions, in the order the code answers them:
+The six questions, in the order the code answers them:
 
 | # | Question | Answered by |
 |---|---|---|
@@ -25,8 +25,9 @@ The four questions, in the order the code answers them:
 | 3 | What threshold does the *economics* imply, not `predict()`? | `train_calibrate.py` |
 | 4 | Does the out-of-time drop mean decay, or is the label biased? | `temporal_validation.py` → `horizon_validation.py` |
 | 5 | Why do published results on this data hit 0.95? | `leakage_demo.py` |
+| 6 | Do approval outcomes vary across available geographic proxies? | `fairness_audit.py` |
 
-A fifth implicit question — *is the serving path faithful to the training path?* — is
+A seventh implicit question — *is the serving path faithful to the training path?* — is
 answered structurally by the `FeatureSpec` artifact (§9).
 
 ---
@@ -74,6 +75,7 @@ function, so results are comparable across scripts without passing state between
 | `features.py` | Feature engineering, the five named feature sets, and `FeatureSpec` (the train/serve contract). |
 | `model.py` | Hyperparameters, the seeded 70/15/15 split, LightGBM and logistic-regression fitters. |
 | `evaluate.py` | Ranking metrics, calibration metrics, the cost curve, threshold selection, LGD sensitivity. |
+| `fairness.py` | Group approval/error metrics and the four-fifths proxy screen. |
 
 ---
 
@@ -387,7 +389,7 @@ output in the repo.
 
 ---
 
-## 8. The five experiments
+## 8. The six experiments
 
 ### 8.1 `run_baselines.py` — how much lift is real
 
@@ -514,6 +516,24 @@ label arithmetic.
 This is a runnable script rather than a README caveat because *"our 0.72 is honest and
 their 0.95 is leakage"* is a claim that should be demonstrable on demand.
 
+### 8.6 `fairness_audit.py` — geographic proxy disparity screen
+
+The model never consumes `addr_state` or masked `zip_code`; `config.FAIRNESS_PROXIES`
+keeps them available only for evaluation. The audit scores the held-out test split with
+the shipped model and reports approval rate, default rate, good-applicant approval
+rate, bad-loan approval rate, and each group's approval rate relative to the
+highest-approval group. Groups under 0.80 are flagged for investigation.
+
+On the 201,803-loan test set, 43 state groups and 110 masked-ZIP groups meet the
+500-loan reporting floor. Their minimum ratios are 0.961 and 0.956 respectively;
+none fall below 0.80. The portfolio approves 96.39% of applications at the selected
+threshold, so this is a low-rejection diagnostic rather than a strong fairness stress
+test.
+
+This is a diagnostic, not a legal conclusion. The extract has no complete protected-
+class labels, geography is only a proxy, and excluding geography cannot remove all
+correlated information. `MODEL_CARD.md` states that limitation explicitly.
+
 ---
 
 ## 9. The serving path
@@ -634,11 +654,12 @@ the curve is unimodal so it's fine, but the function does not verify contiguity.
   per-segment estimate would sharpen the decision more than any modeling change — see
   the sensitivity table in §7.4.
 
-### 10.7 No fairness audit
+### 10.7 Fairness data is proxy-only
 
-`addr_state` and `zip_code` exist in the raw file and the model is never tested for
-disparate impact. Mandatory before this could be taken seriously as an underwriting
-tool, and currently absent.
+The reproducible audit covers state and masked ZIP, and both are excluded from model
+features. Those fields are geographic proxies rather than protected-class labels, so
+the results cannot establish demographic parity, intersectional fairness, or legal
+compliance. A real deployment still requires a controlled protected-class analysis.
 
 ### 10.8 12-month horizon truncation
 
@@ -663,12 +684,17 @@ python scripts/train_calibrate.py      # §8.2, §8.3 economics; writes serving 
 python scripts/temporal_validation.py  # §8.3
 python scripts/horizon_validation.py   # §8.4 — requires temporal.json
 python scripts/leakage_demo.py         # §8.5
+python scripts/fairness_audit.py        # §8.6
+
+pip install -r requirements-dev.txt
+ruff check src scripts tests streamlit_app.py
+pytest
 
 streamlit run streamlit_app.py
 ```
 
 Seed is fixed at 42 throughout (`config.RANDOM_SEED`) and every reported number is
-regenerated from these six commands. `reports/` is tracked in git so results are
+regenerated from these seven commands. `reports/` is tracked in git so results are
 diffable across runs.
 
 ---

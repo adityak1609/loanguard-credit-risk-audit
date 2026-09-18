@@ -80,7 +80,7 @@ def main() -> None:
                     "comparable to the 0.72 obtained legitimately."),
     }, indent=2), encoding="utf-8")
 
-    print(f"\ntop-10 importance (leaky model), leaked columns marked:")
+    print("\ntop-10 importance (leaky model), leaked columns marked:")
     for name, v in imp.items():
         mark = "  <-- LEAKED" if name in C.LEAKY else ""
         print(f"  {name:28s} {v:8.0f}{mark}")

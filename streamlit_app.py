@@ -17,7 +17,7 @@ from loanguard.config import GRADE_MAP, PROCESSED  # noqa: E402
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="LoanGuard AI",
+    page_title="LoanGuard | Credit-Risk Model Audit",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -344,7 +344,7 @@ THRESHOLD = cfg['threshold']
 # ── Hero ─────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <div class="hero-badge">AI-Powered Risk Assessment</div>
+    <div class="hero-badge">Audit-First Credit Risk</div>
     <p class="hero-title">Loan<span>Guard</span></p>
     <p class="hero-sub">Calibrated default probability with per-application explanations.<br>
     Trained on 1.35M resolved LendingClub loans (2007–2018) · test AUC 0.724 · ECE 0.002.</p>

@@ -2,25 +2,25 @@
   "threshold_selected_on_val": 0.51,
   "val": {
     "threshold": 0.44,
-    "total_cost": 379618043.5275091,
+    "total_cost": 379618043.5275102,
     "approval_rate": 0.9409619329838158,
-    "cost_per_application": 1881.141136002166,
-    "approve_all_cost": 389399204.6943039,
-    "savings_vs_approve_all": 9781161.166794777,
+    "cost_per_application": 1881.1411360021716,
+    "approve_all_cost": 389399204.69430494,
+    "savings_vs_approve_all": 9781161.166794717,
     "flat_region": [
       0.41000000000000003,
       0.61
     ],
     "flat_region_tolerance": 0.01,
-    "flat_region_cost_spread": 3647811.1263706684
+    "flat_region_cost_spread": 3647811.126370609
   },
   "test": {
-    "total_cost": 382042423.7268312,
+    "total_cost": 382042423.7268307,
     "approval_rate": 0.963935124849482,
-    "cost_per_application": 1893.1454127383201,
-    "approve_all_cost": 391408642.8079166,
-    "savings_vs_approve_all": 9366219.081085384,
-    "cost_at_p50": 382042423.7268312,
+    "cost_per_application": 1893.1454127383176,
+    "approve_all_cost": 391408642.80791616,
+    "savings_vs_approve_all": 9366219.081085443,
+    "cost_at_p50": 382042423.7268307,
     "savings_vs_p50": 0.0,
     "confusion": {
       "approved": 194525,

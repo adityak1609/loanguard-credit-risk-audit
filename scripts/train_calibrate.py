@@ -24,8 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import joblib
 import lightgbm as lgb
-import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.isotonic import IsotonicRegression
 
 from loanguard import config as C
@@ -140,8 +140,19 @@ def main() -> None:
     joblib.dump(iso, C.PROCESSED / "calibrator.pkl")
     spec.save(C.PROCESSED / "feature_spec.json")
     (C.PROCESSED / "serving_config.json").write_text(
-        json.dumps({"threshold": t, "trained_on": "random split, all years"},
-                   indent=2), encoding="utf-8")
+        json.dumps(
+            {
+                "threshold": t,
+                "trained_on": "random split, all years",
+                "artifact_versions": {
+                    "lightgbm": lgb.__version__,
+                    "scikit_learn": sklearn.__version__,
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     print(f"\nwrote model, calibrator, feature spec to {C.PROCESSED}")
 
 

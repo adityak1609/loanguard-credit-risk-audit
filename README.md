@@ -1,8 +1,15 @@
-# LoanGuard
+# LoanGuard: Auditing Credit-Risk Models for Leakage, Calibration, and Temporal Bias
+
+[![CI](https://github.com/adityak1609/loanguard-credit-risk-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/adityak1609/loanguard-credit-risk-audit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 **[Live Demo →](https://loan-d-qwshwdrewxtufmpqexbqd3.streamlit.app/)**
 
-Credit default risk modelling on the LendingClub 2007–2018 extract (1.35M resolved loans).
+An audit-first credit-risk case study on 1.35M+ LendingClub loans—not just a
+default predictor. It reproduces and fixes probability inflation, demonstrates
+target leakage that raises AUC from 0.72 to 0.9995, and separates survivorship
+bias from genuine temporal drift.
 
 The interesting results here are not the AUC. They are what happens when you ask
 three questions the headline metric hides: *how much does the model add over the
@@ -194,6 +201,31 @@ is honest and their 0.95 is leakage" is a claim worth being able to demonstrate.
 
 Reproduce: `python scripts/leakage_demo.py` → `reports/leakage_demo.csv`
 
+### 7. Geography is excluded from the model and audited separately
+
+`addr_state` and masked `zip_code` are retained only for post-model monitoring.
+They are excluded from every deployable `FeatureSpec` because geography can act
+as a proxy for protected characteristics. The audit reports approval rate,
+observed default rate, good-applicant approval rate, bad-loan approval rate, and
+the four-fifths screening ratio for sufficiently large groups.
+
+| Proxy | Groups with ≥500 test loans | Minimum approval-rate ratio | Below 0.80 |
+|---|---:|---:|---:|
+| State | 43 | 0.961 | 0 |
+| Masked ZIP | 110 | 0.956 | 0 |
+
+At the 0.51 decision threshold, the held-out approval rate is 96.39%. No
+eligible geographic group triggers the four-fifths screen, although the high
+overall approval rate makes this a weak stress test of disparate rejection.
+
+This is deliberately framed as a **proxy disparity screen**, not a compliance
+claim: the extract has no direct protected-class labels, so state and masked ZIP
+cannot establish demographic fairness. See `MODEL_CARD.md` for the use boundary
+and the controls a real underwriting deployment would still require.
+
+Reproduce: `python scripts/fairness_audit.py` →
+`reports/fairness_{addr_state,zip_code}.csv` and `reports/fairness_summary.json`
+
 ---
 
 ## What changed from the original pipeline
@@ -211,6 +243,8 @@ Reproduce: `python scripts/leakage_demo.py` → `reports/leakage_demo.csv`
 | Validation | random split only | random + out-of-time + maturity decomposition |
 | Serving | column list retyped by hand in the app | shared `FeatureSpec` artefact |
 | Features | encoding only | leverage, payment burden, credit history, log income |
+| Fairness | not evaluated | geographic proxies excluded from features and monitored by group |
+| Engineering | no automated checks | unit tests + lint + GitHub Actions CI |
 
 Two live bugs in the Streamlit app were fixed along the way: it displayed
 uncalibrated scores as probabilities, and its SHAP waterfall used
@@ -222,12 +256,15 @@ was shown with the wrong sign.
 ## Layout
 
 ```
-src/loanguard/     config, data prep, features, model, evaluation
+src/loanguard/     config, data prep, features, model, evaluation, fairness
 scripts/           prepare_data · run_baselines · train_calibrate
                    temporal_validation · horizon_validation · leakage_demo
+                   fairness_audit
+tests/             unit tests for data, feature parity, costs, and fairness
 reports/           all generated results (tracked in git)
 notebooks/legacy/  original exploratory notebooks, superseded
 streamlit_app.py   serving UI (deployed on Streamlit Community Cloud)
+MODEL_CARD.md      intended use, performance, subgroup audit, limitations
 TECHNICAL.md       how the code produces these findings, and where it is soft
 TECH_STACK.md      what each library does and what the model looks at
 processed/         model artefacts tracked for deployment (parquet files gitignored)
@@ -251,6 +288,11 @@ python scripts/train_calibrate.py     # findings 2-3, writes serving artefacts
 python scripts/temporal_validation.py # finding 4
 python scripts/horizon_validation.py  # finding 5 (needs finding 4's output)
 python scripts/leakage_demo.py        # finding 6
+python scripts/fairness_audit.py      # finding 7
+
+pip install -r requirements-dev.txt
+ruff check src scripts tests streamlit_app.py
+pytest
 
 streamlit run streamlit_app.py
 ```
@@ -288,6 +330,7 @@ commit.
   change (see the sensitivity table).
 - **`cost_fp` assumes a declined applicant is a total loss of interest.** In
   practice they may be re-priced rather than declined outright.
-- **No fairness audit.** `addr_state` and `zip_code` are available and the model
-  is not tested for disparate impact — required before this could be taken
-  seriously as an underwriting tool.
+- **The fairness audit is proxy-only.** State and masked ZIP can reveal
+  geographic disparities but are not protected-class labels. The audit cannot
+  establish demographic parity or legal compliance, and feature exclusion does
+  not remove proxy information carried by correlated financial variables.
