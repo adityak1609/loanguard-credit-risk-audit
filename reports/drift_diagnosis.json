@@ -1,0 +1,151 @@
+{
+  "question": "What explains the residual fixed-window out-of-time AUC drop?",
+  "feature_ablation": [
+    {
+      "feature_set": "grade_only",
+      "n_features": 1,
+      "auc_2015": 0.7032024650393194,
+      "auc_2016_2017": 0.693812213450953,
+      "auc_drop": 0.009390251588366372,
+      "ap_2015": 0.08139898305051603,
+      "ap_2016_2017": 0.09199375375663897
+    },
+    {
+      "feature_set": "incumbent_only",
+      "n_features": 3,
+      "auc_2015": 0.705847521058605,
+      "auc_2016_2017": 0.7013323092733349,
+      "auc_drop": 0.004515211785270146,
+      "ap_2015": 0.08858641502225598,
+      "ap_2016_2017": 0.10146730180019115
+    },
+    {
+      "feature_set": "applicant_only",
+      "n_features": 43,
+      "auc_2015": 0.7027039125806613,
+      "auc_2016_2017": 0.6884262453598788,
+      "auc_drop": 0.014277667220782497,
+      "ap_2015": 0.09035668611539187,
+      "ap_2016_2017": 0.09210274936744181
+    },
+    {
+      "feature_set": "full",
+      "n_features": 46,
+      "auc_2015": 0.7249405594713616,
+      "auc_2016_2017": 0.7118564306240899,
+      "auc_drop": 0.013084128847271725,
+      "ap_2015": 0.10025690827681957,
+      "ap_2016_2017": 0.10668051342173997
+    }
+  ],
+  "training_window": [
+    {
+      "training_window": "through_2014",
+      "n_train": 466345,
+      "validation_window": "2015",
+      "validation_auc": 0.7249405594713616,
+      "test_window": "2016-2017",
+      "test_auc": 0.7118564306240899
+    },
+    {
+      "training_window": "2015_only",
+      "n_train": 336876,
+      "validation_window": "2015_holdout",
+      "validation_auc": 0.7292394687317602,
+      "test_window": "2016-2017",
+      "test_auc": 0.7204588434255463
+    }
+  ],
+  "auc_recovered_by_2015_retraining": 0.00860241280145646,
+  "share_of_original_drop_recovered": 0.657469282202171,
+  "top_feature_shift": [
+    {
+      "feature": "int_rate",
+      "kind": "numeric",
+      "psi": 0.08783687031727774,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    },
+    {
+      "feature": "revol_util",
+      "kind": "numeric",
+      "psi": 0.03788378476272859,
+      "reference_missing_rate": 0.0003847112884266021,
+      "current_missing_rate": 0.000806390990289139,
+      "missing_rate_change": 0.00042167970186253695
+    },
+    {
+      "feature": "loan_to_income",
+      "kind": "numeric",
+      "psi": 0.03194667539447821,
+      "reference_missing_rate": 4.749522079340767e-06,
+      "current_missing_rate": 0.00062643367889693,
+      "missing_rate_change": 0.0006216841568175892
+    },
+    {
+      "feature": "purpose",
+      "kind": "categorical",
+      "psi": 0.030041868082550154,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    },
+    {
+      "feature": "installment_to_monthly_income",
+      "kind": "numeric",
+      "psi": 0.029809496336260045,
+      "reference_missing_rate": 4.749522079340767e-06,
+      "current_missing_rate": 0.00062643367889693,
+      "missing_rate_change": 0.0006216841568175892
+    },
+    {
+      "feature": "sub_grade",
+      "kind": "numeric",
+      "psi": 0.024945787946473452,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    },
+    {
+      "feature": "installment",
+      "kind": "numeric",
+      "psi": 0.024188158752503474,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    },
+    {
+      "feature": "loan_amnt",
+      "kind": "numeric",
+      "psi": 0.022824811627254783,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    },
+    {
+      "feature": "revol_bal_to_income",
+      "kind": "numeric",
+      "psi": 0.022775034657149373,
+      "reference_missing_rate": 4.749522079340767e-06,
+      "current_missing_rate": 0.00062643367889693,
+      "missing_rate_change": 0.0006216841568175892
+    },
+    {
+      "feature": "total_acc",
+      "kind": "numeric",
+      "psi": 0.020695765595304037,
+      "reference_missing_rate": 0.0,
+      "current_missing_rate": 0.0,
+      "missing_rate_change": 0.0
+    }
+  ],
+  "segments_with_lower_future_auc": 9,
+  "segments_analyzed": 9,
+  "newer_bureau_candidates_absent_from_model": [
+    "acc_open_past_24mths",
+    "bc_util",
+    "tot_cur_bal"
+  ],
+  "conclusion": "The newer-bureau-field hypothesis cannot explain this model's drift because those fields are not model inputs. Drift is concentrated in applicant signals rather than the incumbent grade fields, and AUC declines inside every grade and term segment, so changing segment mix is not enough to explain it. Retraining on 2015 raises 2016-2017 AUC by 0.0086, recovering 65.7% of the original drop. The largest PSI is only 0.088, pointing to changing feature-outcome relationships (model staleness/concept drift) more than a large marginal population shift."
+}

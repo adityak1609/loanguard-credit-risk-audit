@@ -5,7 +5,7 @@ Internal deep-dive. The `README.md` states *what was found*; this document expla
 the remaining soft spots are.
 
 Read order if you're new: §1 (mental model) → §3 (targets) → §7 (cost model) → §8
-(the six experiments) → §10 (known soft spots).
+(the seven experiments) → §10 (known soft spots).
 
 ---
 
@@ -16,7 +16,7 @@ structured as **a chain of questions about whether a reported number means anyth
 The model itself is deliberately unremarkable — a stock LightGBM with hand-set
 hyperparameters, never tuned. Everything interesting lives in the evaluation layer.
 
-The six questions, in the order the code answers them:
+The seven questions, in the order the code answers them:
 
 | # | Question | Answered by |
 |---|---|---|
@@ -25,9 +25,10 @@ The six questions, in the order the code answers them:
 | 3 | What threshold does the *economics* imply, not `predict()`? | `train_calibrate.py` |
 | 4 | Does the out-of-time drop mean decay, or is the label biased? | `temporal_validation.py` → `horizon_validation.py` |
 | 5 | Why do published results on this data hit 0.95? | `leakage_demo.py` |
-| 6 | Do approval outcomes vary across available geographic proxies? | `fairness_audit.py` |
+| 6 | What explains the residual fixed-window drift? | `drift_diagnosis.py` |
+| 7 | Do approval outcomes vary across available geographic proxies? | `fairness_audit.py` |
 
-A seventh implicit question — *is the serving path faithful to the training path?* — is
+An eighth implicit question — *is the serving path faithful to the training path?* — is
 answered structurally by the `FeatureSpec` artifact (§9).
 
 ---
@@ -52,6 +53,8 @@ processed/loans_12m.parquet      1,765,426 rows · 12-month-window target
         │                             maturity_confound.csv
         ├── horizon_validation.py   → reports/horizon_validation.json,
         │                             horizon_per_year.csv   [needs temporal.json]
+        ├── drift_diagnosis.py      → reports/drift_*.{csv,json}
+        ├── fairness_audit.py       → reports/fairness_*.{csv,json}
         └── leakage_demo.py         → reports/leakage_demo.{csv,json}
                                        │
                                        ▼
@@ -75,6 +78,7 @@ function, so results are comparable across scripts without passing state between
 | `features.py` | Feature engineering, the five named feature sets, and `FeatureSpec` (the train/serve contract). |
 | `model.py` | Hyperparameters, the seeded 70/15/15 split, LightGBM and logistic-regression fitters. |
 | `evaluate.py` | Ranking metrics, calibration metrics, the cost curve, threshold selection, LGD sensitivity. |
+| `drift.py` | Population-stability and missingness-shift diagnostics. |
 | `fairness.py` | Group approval/error metrics and the four-fifths proxy screen. |
 
 ---
@@ -389,7 +393,7 @@ output in the repo.
 
 ---
 
-## 8. The six experiments
+## 8. The seven experiments
 
 ### 8.1 `run_baselines.py` — how much lift is real
 
@@ -516,7 +520,30 @@ label arithmetic.
 This is a runnable script rather than a README caveat because *"our 0.72 is honest and
 their 0.95 is leakage"* is a claim that should be demonstrable on demand.
 
-### 8.6 `fairness_audit.py` — geographic proxy disparity screen
+### 8.6 `drift_diagnosis.py` — what remains after fixing survivorship
+
+The residual 0.0131 AUC drop is not caused by the proposed newer-bureau-field
+hypothesis: `bc_util`, `tot_cur_bal`, and `acc_open_past_24mths` are not inputs to this
+model at all. Three diagnostics narrow the explanation:
+
+| Feature family | AUC 2015 | AUC 2016–17 | Drop |
+|---|---:|---:|---:|
+| incumbent only | 0.7058 | 0.7013 | 0.0045 |
+| applicant only | 0.7027 | 0.6884 | **0.0143** |
+| full | 0.7249 | 0.7119 | 0.0131 |
+
+The degradation sits mainly in borrower/application signals, not LendingClub's grade
+fields. It also appears inside all nine analyzed grade and term segments, ruling out a
+simple change in segment proportions.
+
+Finally, training a fresh model on 2015 raises 2016–17 AUC from **0.7119 to 0.7205**,
+recovering 65.7% of the original loss. The largest marginal feature shift is interest
+rate at PSI 0.088; no feature reaches the common 0.10 screening level. Together these
+results point to changing feature-outcome relationships—model staleness or concept
+drift—more than a large marginal population shift. It narrows the cause but does not
+identify the economic mechanism behind that relationship change.
+
+### 8.7 `fairness_audit.py` — geographic proxy disparity screen
 
 The model never consumes `addr_state` or masked `zip_code`; `config.FAIRNESS_PROXIES`
 keeps them available only for evaluation. The audit scores the held-out test split with
@@ -614,12 +641,13 @@ drop-in change: `build_horizon()` attaches neither `matured` nor the economics c
 (`forgone_interest`, `cost_fn`, `cost_fp`), so the cost model would need wiring in, and
 the whole threshold search would have to be redone against a ~4% base rate.
 
-### 10.2 The residual 0.0131 drift is unexplained
+### 10.2 The economic cause of concept drift remains unknown
 
-§8.4 removes survivorship but leaves real degradation. Two untested candidates:
-LendingClub's borrower mix widening after 2015, or the newer bureau fields (`bc_util`,
-`tot_cur_bal`, `acc_open_past_24mths`) being absent before 2012 — which makes early
-vintages structurally different in ways unrelated to time. Not yet separated.
+§8.6 rules out the newer-bureau-field hypothesis, shows that the loss occurs within
+grade/term segments, and recovers 65.7% of it by retraining on 2015. That supports
+model staleness in applicant signals. The dataset still cannot identify *why* those
+feature-outcome relationships changed; macroeconomic conditions, underwriting policy,
+and applicant behavior remain plausible external causes.
 
 ### 10.3 The validation set does triple duty
 
@@ -684,7 +712,8 @@ python scripts/train_calibrate.py      # §8.2, §8.3 economics; writes serving 
 python scripts/temporal_validation.py  # §8.3
 python scripts/horizon_validation.py   # §8.4 — requires temporal.json
 python scripts/leakage_demo.py         # §8.5
-python scripts/fairness_audit.py        # §8.6
+python scripts/drift_diagnosis.py       # §8.6
+python scripts/fairness_audit.py        # §8.7
 
 pip install -r requirements-dev.txt
 ruff check src scripts tests streamlit_app.py
@@ -694,7 +723,7 @@ streamlit run streamlit_app.py
 ```
 
 Seed is fixed at 42 throughout (`config.RANDOM_SEED`) and every reported number is
-regenerated from these seven commands. `reports/` is tracked in git so results are
+regenerated from these eight commands. `reports/` is tracked in git so results are
 diffable across runs.
 
 ---

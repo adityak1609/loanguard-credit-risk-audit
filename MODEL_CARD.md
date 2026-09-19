@@ -72,7 +72,11 @@ midpoint, not a precisely identified optimum.
 
 For the fixed 12-month target, AUC falls from 0.7249 on 2015 to 0.7119 on
 2016–2017. Roughly half of the larger drop seen with the resolved-only target
-is attributable to survivorship bias; a residual 0.0131 remains.
+is attributable to survivorship bias; a residual 0.0131 remains. Retraining on
+2015 raises 2016–2017 AUC to 0.7205, recovering 65.7% of that residual loss.
+The drop is concentrated in applicant features and occurs within every analyzed
+grade and term segment, which is consistent with model staleness rather than a
+simple change in portfolio mix.
 
 ## Fairness and subgroup evaluation
 
@@ -119,7 +123,7 @@ monitoring.
 
 `pytest` covers feature engineering, serialized `FeatureSpec` parity,
 post-origination leakage boundaries, target construction, calibration,
-cost-threshold selection, and fairness-report calculations. GitHub Actions
+cost-threshold selection, drift diagnostics, and fairness-report calculations. GitHub Actions
 runs linting, tests, and entry-point compilation on every push and pull request.
 
 The numerical reports tracked under `reports/` are the reproducibility
